@@ -27,3 +27,19 @@ query = "cat:cs.AI OR cat:cs.CV OR cat:cs.LG OR cat:cs.CL AND (ti:ego OR abs:ego
 client = arxiv.Client(num_retries=10,delay_seconds=10)
 search = arxiv.Search(query=query,sort_by=arxiv.SortCriterion.SubmittedDate,sort_order=arxiv.SortOrder.Descending)
 paper = list(client.results(search))
+# print(paper)
+from datetime import datetime,timezone,timedelta
+# def is_today(date: datetime) -> bool:
+#     """检查日期是否为今天"""
+#     now = datetime.now(timezone.utc)
+#     return (date.year == now.year and 
+#             date.month == now.month and 
+#             date.day == now.day)
+# print(is_today(paper[0].published))
+
+def is_within_last_month(date: datetime) -> bool:
+    """检查日期是否在过去一个月内"""
+    now = datetime.now(timezone.utc)
+    one_month_ago = now - timedelta(days=30)
+    return date >= one_month_ago
+print(is_within_last_month(paper[0].published))

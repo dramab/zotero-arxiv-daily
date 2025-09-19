@@ -15,6 +15,7 @@ from tempfile import mkstemp
 from paper import ArxivPaper
 from llm import set_global_llm
 import feedparser
+from datetime import datetime,timezone,timedelta
 
 def get_zotero_corpus(id:str,key:str) -> list[dict]:
     zot = zotero.Zotero(id, 'user', key)
@@ -51,10 +52,17 @@ def get_arxiv_paper(query:str, debug:bool=False) -> list[ArxivPaper]:
     # feed = feedparser.parse(f"https://rss.arxiv.org/atom/{query}")
     # if 'Feed error for query' in feed.feed.title:
     #     raise Exception(f"Invalid ARXIV_QUERY: {query}.")
+
+    def is_within_last_month(date: datetime) -> bool:
+        """检查日期是否在过去一个月内"""
+        now = datetime.now(timezone.utc)
+        one_month_ago = now - timedelta(days=30)
+        return date >= one_month_ago
+
     if not debug:
         try:
             search = arxiv.Search(query=query,sort_by=arxiv.SortCriterion.SubmittedDate,sort_order=arxiv.SortOrder.Descending)
-            papers = [ArxivPaper(p) for p in client.results(search)] # pyright: ignore[reportUndefinedVariable]
+            papers = [ArxivPaper(p) for p in client.results(search) if is_within_last_month(p.published)] # pyright: ignore[reportUndefinedVariable]
             if len(papers) == 0:
                 raise Exception(f"No papers found for query: {query}")
         except Exception as e:
