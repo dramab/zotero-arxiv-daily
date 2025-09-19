@@ -48,19 +48,46 @@ def filter_corpus(corpus:list[dict], pattern:str) -> list[dict]:
 
 def get_arxiv_paper(query:str, debug:bool=False) -> list[ArxivPaper]:
     client = arxiv.Client(num_retries=10,delay_seconds=10)
-    feed = feedparser.parse(f"https://rss.arxiv.org/atom/{query}")
-    if 'Feed error for query' in feed.feed.title:
-        raise Exception(f"Invalid ARXIV_QUERY: {query}.")
+    # feed = feedparser.parse(f"https://rss.arxiv.org/atom/{query}")
+    # if 'Feed error for query' in feed.feed.title:
+    #     raise Exception(f"Invalid ARXIV_QUERY: {query}.")
     if not debug:
-        papers = []
-        all_paper_ids = [i.id.removeprefix("oai:arXiv.org:") for i in feed.entries if i.arxiv_announce_type == 'new']
-        bar = tqdm(total=len(all_paper_ids),desc="Retrieving Arxiv papers")
-        for i in range(0,len(all_paper_ids),50):
-            search = arxiv.Search(id_list=all_paper_ids[i:i+50])
-            batch = [ArxivPaper(p) for p in client.results(search)]
-            bar.update(len(batch))
-            papers.extend(batch)
-        bar.close()
+        try:
+            search = arxiv.Search(query=query,sort_by=arxiv.SortCriterion.SubmittedDate,sort_order=arxiv.SortOrder.Descending)
+            papers = [ArxivPaper(p) for p in client.results(search)] # pyright: ignore[reportUndefinedVariable]
+            if len(papers) == 0:
+                raise Exception(f"No papers found for query: {query}")
+        except Exception as e:
+            raise Exception(f"Failed to execute complex query: {query}. Error: {str(e)}")
+    # if not debug:
+    #     papers = []
+    #     all_paper_ids = [i.id.removeprefix("oai:arXiv.org:") for i in feed.entries if i.arxiv_announce_type == 'new']
+    #     bar = tqdm(total=len(all_paper_ids),desc="Retrieving Arxiv papers")
+    #     for i in range(0,len(all_paper_ids),50):
+    #         search = arxiv.Search(id_list=all_paper_ids[i:i+50])
+    #         batch = [ArxivPaper(p) for p in client.results(search)]
+    #         bar.update(len(batch))
+    #         papers.extend(batch)
+    #     bar.close()
+        # try:
+        #     search = arxiv.Search(query=query, sort_by=arxiv.SortCriterion.SubmittedDate, sort_order=arxiv.SortOrder.Descending)
+        #     papers = []
+        #     count = 0
+        #     max_papers = 100 if not debug else 5
+            
+        #     for paper in client.results(search):
+        #         papers.append(ArxivPaper(paper))
+        #         count += 1
+        #         if count >= max_papers:
+        #             break
+                    
+        #     logger.info(f"Retrieved {len(papers)} papers using arXiv API")
+        #     return papers
+            
+        # except Exception as e:
+        #     logger.error(f"Error with arXiv API query: {e}")
+        #     raise Exception(f"Failed to execute complex query: {query}. Error: {str(e)}")
+    
 
     else:
         logger.debug("Retrieve 5 arxiv papers regardless of the date.")
